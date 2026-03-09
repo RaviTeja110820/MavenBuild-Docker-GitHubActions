@@ -1,0 +1,55 @@
+# Name of the workflow visible in GitHub Actions UI
+name: build java Application
+
+# Define the event that triggers the workflow
+on:
+  push   # run pipeline whenever code is pushed to the repository
+
+jobs:
+
+  # Define the job name
+  builddeployjob:
+
+    # GitHub will create a virtual machine with Ubuntu
+    runs-on: ubuntu-latest
+
+    steps:
+
+      # Step 1: Checkout repository code
+      - name: Checkout code
+        uses: actions/checkout@v4
+        # This action clones the GitHub repository into the runner
+
+      # Step 2: Install Java and Maven
+      - name: Install Java and Maven
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'      # Install Java 17
+          distribution: 'temurin' # OpenJDK distribution
+          cache: maven            # Cache Maven dependencies to speed up builds
+
+      # Step 3: Setup Docker build environment
+      - name: Install docker
+        uses: docker/setup-buildx-action@v3
+        # Enables Docker BuildKit and advanced Docker builds
+
+      # Step 4: Build Java application using Maven
+      - name: build the code
+        run: mvn package
+        # mvn package compiles the project and generates a WAR/JAR file
+
+      # Step 5: Login to DockerHub
+      - name: Loginto Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ravteja                     # DockerHub username
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          # Password is stored securely in GitHub Secrets
+
+      # Step 6: Build Docker image and push to DockerHub
+      - name: Build dockerfile and push Image
+        uses: docker/build-push-action@v6
+        with:
+          context: .                # directory containing Dockerfile
+          tags: ravteja/myimagemanoj # image name
+          push: true                # push image to DockerHub
